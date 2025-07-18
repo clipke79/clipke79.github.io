@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Immobilienrechner Schweden</title>
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 900px; margin: auto; background: #f8f8f8; }
+    h1, h2 { color: #003366; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, select { width: 100%; padding: 6px; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: right; }
+    th { background: #eee; }
+    .highlight { background: #d0f0d0; font-weight: bold; }
+    .note { font-size: 0.9em; margin-top: 20px; color: #555; }
+  </style>
+</head>
+<body>
+
+<h1>Immobilienrechner 🇸🇪 für deutsche Eigentümer</h1>
+
+<label>Kaufpreis (EUR):</label>
+<input type="number" id="kaufpreis" value="300000">
+
+<label>Mieteinnahmen pro Jahr (SEK):</label>
+<input type="number" id="mieteinnahmen" value="120000">
+
+<label>Schuldzinsen pro Jahr (SEK):</label>
+<input type="number" id="zinsen" value="15000">
+
+<label>Renovierungskosten (SEK):</label>
+<input type="number" id="renovierung" value="20000">
+
+<label>Art der Renovierung:</label>
+<select id="renoart">
+  <option value="erhaltend">Erhaltend (absetzbar)</option>
+  <option value="wertsteigernd">Wertsteigernd (nicht absetzbar)</option>
+</select>
+
+<button onclick="berechne()">🔍 Berechnen</button>
+
+<div id="ergebnis"></div>
+
+<div class="note">
+  <h2>📌 Steuerhinweise</h2>
+  <p>
+    <strong>In Schweden abziehbar:</strong> 40.000 SEK-Freibetrag, 20 % Pauschale, Schuldzinsen, erhaltende Renovierungskosten.<br>
+    <strong>In Deutschland:</strong> Nur Progressionsvorbehalt – keine direkten Abzüge möglich.<br>
+    <strong>Wertsteigernde Maßnahmen</strong> wirken sich nur beim Verkauf aus.
+  </p>
+</div>
+
+<script>
+function berechne() {
+  const kaufpreis = parseFloat(document.getElementById("kaufpreis").value);
+  const miete = parseFloat(document.getElementById("mieteinnahmen").value);
+  const zinsen = parseFloat(document.getElementById("zinsen").value);
+  const reno = parseFloat(document.getElementById("renovierung").value);
+  const renoart = document.getElementById("renoart").value;
+
+  const ekStufen = [0, 50000, 100000, 150000, 200000];
+  let bestResult = null;
+
+  let html = `
+    <h2>📊 Ergebnisvergleich je Eigenkapital</h2>
+    <table>
+      <tr>
+        <th>Eigenkapital (€)</th>
+        <th>Darlehen (€)</th>
+        <th>Steuerbar (SEK)</th>
+        <th>Steuer (SEK)</th>
+        <th>Netto/Jahr (SEK)</th>
+        <th>10 Jahre (SEK)</th>
+        <th>20 Jahre (SEK)</th>
+      </tr>
+  `;
+
+  ekStufen.forEach(ek => {
+    const darlehen = kaufpreis - ek;
+    const pauschale = 40000;
+    const pauschal20 = miete * 0.2;
+    const abzugsfähig = zinsen + (renoart === "erhaltend" ? reno : 0);
+    const steuerbar = Math.max(0, miete - pauschale - pauschal20 - abzugsfähig);
+    const steuer = steuerbar * 0.3;
+    const netto = miete - steuer;
+    const zehn = netto * 10;
+    const zwanzig = netto * 20;
+
+    if (!bestResult || zwanzig > bestResult.summe) {
+      bestResult = { ek, summe: zwanzig };
+    }
+
+    html += `
+      <tr${ek === bestResult.ek ? ' class="highlight"' : ''}>
+        <td>${ek.toLocaleString()}</td>
+        <td>${darlehen.toLocaleString()}</td>
+        <td>${steuerbar.toFixed(0)}</td>
+        <td>${steuer.toFixed(0)}</td>
+        <td>${netto.toFixed(0)}</td>
+        <td>${zehn.toFixed(0)}</td>
+        <td>${zwanzig.toFixed(0)}</td>
+      </tr>
+    `;
+  });
+
+  html += `</table><h3>💡 Empfehlung:</h3>
+    <p>Die höchste Rendite nach 20 Jahren erreichst du bei <strong>${bestResult.ek.toLocaleString()} € Eigenkapital</strong>.</p>`;
+
+  document.getElementById("ergebnis").innerHTML = html;
+}
+</script>
+
+</body>
+</html>
