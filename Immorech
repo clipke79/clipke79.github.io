@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Immobilien-Finanzierungsrechner</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 15px; max-width: 600px; margin: auto; }
+  label, input, select, button { display: block; width: 100%; margin-top: 10px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1; }
+  .result { margin-top: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+  .explanation { font-size: 0.9em; color: #555; margin-top: 10px; }
+  @media (min-width: 600px) {
+    label, input, select, button { max-width: 300px; }
+  }
+</style>
+</head>
+<body>
+
+  <h2>🏠 Immobilien-Finanzierungsrechner</h2>
+
+  <!-- Eingaben -->
+  <label for="land">Land:</label>
+  <select id="land">
+    <option value="de">Deutschland (EUR)</option>
+    <option value="se">Schweden (SEK)</option>
+    <option value="us">USA (USD)</option>
+  </select>
+
+  <div class="row">
+    <div>
+      <label for="kaufpreis">Kaufpreis:</label>
+      <input type="number" id="kaufpreis" value="300000">
+    </div>
+    <div>
+      <label for="nebenkosten">Nebenkosten %:</label>
+      <input type="number" id="nebenkosten" value="10" step="0.1">
+    </div>
+  </div>
+
+  <label for="eigenkapital">Eigenkapital: <span id="ekVal">100 000</span></label>
+  <input type="range" id="eigenkapital" min="0" max="300000" value="100000" step="1000" oninput="updateEk()">
+
+  <div class="row">
+    <div>
+      <label for="zinssatz">Zinssatz (% p.a.):</label>
+      <input type="number" id="zinssatz" value="3.5" step="0.1">
+    </div>
+    <div>
+      <label for="tilgung">Tilgung (% p.a.):</label>
+      <input type="number" id="tilgung" value="2.0" step="0.1">
+    </div>
+  </div>
+
+  <label for="miete">Monatliche Mieteinnahme:</label>
+  <input type="number" id="miete" value="1200">
+
+  <label for="vermietung">Vermietet:</label>
+  <select id="vermietung">
+    <option value="ja">Ja</option>
+    <option value="nein">Nein</option>
+  </select>
+
+  <button onclick="berechne()">🔍 Berechnen</button>
+
+  <div class="result" id="ergebnis"></div>
+
+  <div class="explanation" id="erklaerung">
+    <h3>ℹ️ Begriffe erklärt:</h3>
+    <strong>Annuität:</strong> jährliche Rate aus Zins + Tilgung, konstant über die Laufzeit.<br>
+    <strong>AfA:</strong> Absetzung für Abnutzung – steuerliche Abschreibung (2 % p.a. vom Gebäudeanteil).<br>
+    <strong>Werbungskosten:</strong> Kosten, die bei Vermietung steuerlich absetzbar sind (z. B. Zinsen, AfA, Nebenkosten).<br>
+    <strong>Steuerersparnis:</strong> die Minderung der Steuerlast, z. B. durch Absetzen von Werbungskosten.
+  </div>
+
+<script>
+function updateEk(){
+  document.getElementById('ekVal').innerText = parseInt(document.getElementById('eigenkapital').value).toLocaleString('de-DE');
+}
+
+function berechne(){
+  const land = document.getElementById('land').value;
+  const kp = parseFloat(document.getElementById('kaufpreis').value);
+  const neben = parseFloat(document.getElementById('nebenkosten').value)/100;
+  const ek = parseFloat(document.getElementById('eigenkapital').value);
+  const darlehen = kp + (kp*neben) - ek;
+  const zin = parseFloat(document.getElementById('zinssatz').value)/100;
+  const tilg = parseFloat(document.getElementById('tilgung').value)/100;
+  const mieteM = parseFloat(document.getElementById('miete').value);
+  const verm = document.getElementById('vermietung').value === 'ja';
+
+  const ann = darlehen * (zin + tilg);
+  const afa = verm ? kp * 0.8 * 0.02 : 0;
+  const schuldz = verm ? darlehen * zin : 0;
+  const nebn = kp * neben * zin; // vereinfacht laufende Nebenkosten * Zinskapital
+  const mietJ = verm ? mieteM*12 : 0;
+  const werb = afa + schuldz + nebn;
+  const erw = verm ? (mietJ - ann) : 0;
+
+  let währung = land==='de'?'€':(land==='se'?'SEK':'USD');
+  let steuersatz = (land==='de' ? 0.42 : 0);
+
+  const steuer = verm ? werb * steuersatz : 0;
+
+  const rendite = verm ? ((mietJ - ann)/ (ek || 1) *100) : 0;
+
+  document.getElementById('ergebnis').innerHTML = `
+    <strong>Darlehensbetrag:</strong> ${darlehen.toLocaleString()} ${währung}<br>
+    <strong>Jährliche Annuität:</strong> ${ann.toFixed(2).toLocaleString()} ${währung}<br>
+    <strong>AfA (2 %):</strong> ${afa.toFixed(2).toLocaleString()} ${währung}<br>
+    <strong>Schuldzinsen:</strong> ${schuldz.toFixed(2).toLocaleString()} ${währung}<br>
+    <strong>Werbungskosten gesamt:</strong> ${werb.toFixed(2).toLocaleString()} ${währung}<br>
+    <strong>Monatl. Überschuss:</strong> ${erw.toFixed(2).toLocaleString()} ${währung}<br>
+    <strong>Bruttorendite:</strong> ${rendite.toFixed(2)} %<br>
+    <strong>Steuerersparnis in DE:</strong> ${steuer.toFixed(2).toLocaleString()} ${währung}
+  `;
+}
+
+updateEk();
+</script>
+
+</body>
+</html>
