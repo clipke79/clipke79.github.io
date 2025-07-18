@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Immobilien-Finanzierungsrechner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    h1, h2 { color: #003366; }
+    label, input, select { margin-top: 10px; display: block; width: 100%; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 8px; border: 1px solid #ccc; text-align: right; }
+    th { background-color: #f2f2f2; }
+    .highlight { background-color: #d0f0d0; }
+    .note { font-size: 0.9em; color: #555; margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+  <h1>🏠 Immobilien-Finanzierungsrechner</h1>
+
+  <label for="kaufpreis">Kaufpreis (€):</label>
+  <input type="number" id="kaufpreis" value="300000">
+
+  <label for="nebenkosten">Nebenkosten (%):</label>
+  <input type="number" id="nebenkosten" value="10">
+
+  <label for="zinssatz">Zinssatz (% p.a.):</label>
+  <input type="number" id="zinssatz" value="3.5" step="0.1">
+
+  <label for="tilgung">Tilgung (% p.a.):</label>
+  <input type="number" id="tilgung" value="2.0" step="0.1">
+
+  <label for="vermietung">Vermietet:</label>
+  <select id="vermietung">
+    <option value="ja">Ja</option>
+    <option value="nein">Nein</option>
+  </select>
+
+  <button onclick="vergleiche()">🔍 Vergleich starten</button>
+
+  <div id="vergleich"></div>
+
+  <div class="note">
+    <strong>Erklärung:</strong><br>
+    <strong>Annuität</strong> = Zins + Tilgung (jährlich gleichbleibende Zahlung)<br>
+    <strong>AfA</strong> = Abschreibung Gebäude (2 % jährlich auf 80 % des Kaufpreises)<br>
+    <strong>Werbungskosten</strong> = Schuldzinsen + AfA (nur bei Vermietung)<br>
+    <strong>Steuerersparnis</strong> = 42 % der Werbungskosten (wenn vermietet und in DE)<br>
+    <strong>Gesamtkosten</strong> = Summe aus Annuität – Steuerersparnis (1 Jahr)
+  </div>
+
+  <script>
+    function vergleiche() {
+      const ekStufen = [0, 50000, 100000, 150000, 200000];
+      const kp = parseFloat(document.getElementById("kaufpreis").value);
+      const neben = kp * (parseFloat(document.getElementById("nebenkosten").value) / 100);
+      const zin = parseFloat(document.getElementById("zinssatz").value) / 100;
+      const tilg = parseFloat(document.getElementById("tilgung").value) / 100;
+      const vermietet = document.getElementById("vermietung").value === "ja";
+      const steuersatz = vermietet ? 0.42 : 0;
+
+      let rows = "";
+      let minKosten = Infinity;
+      let besteEk = 0;
+
+      ekStufen.forEach(ek => {
+        const gesamtkosten = kp + neben;
+        const darlehen = gesamtkosten - ek;
+        const ann = darlehen * (zin + tilg);
+        const afa = vermietet ? kp * 0.8 * 0.02 : 0;
+        const schuldzinsen = vermietet ? darlehen * zin : 0;
+        const werbungskosten = afa + schuldzinsen;
+        const steuerersparnis = werbungskosten * steuersatz;
+        const kostenEffektiv = ann - steuerersparnis;
+
+        if (kostenEffektiv < minKosten) {
+          minKosten = kostenEffektiv;
+          besteEk = ek;
+        }
+
+        rows += `<tr class="${ek === besteEk ? 'highlight' : ''}">
+          <td>${ek.toLocaleString()} €</td>
+          <td>${darlehen.toLocaleString()} €</td>
+          <td>${ann.toFixed(0)} €</td>
+          <td>${steuerersparnis.toFixed(0)} €</td>
+          <td><strong>${kostenEffektiv.toFixed(0)} €</strong></td>
+        </tr>`;
+      });
+
+      document.getElementById("vergleich").innerHTML = `
+        <h2>📊 Vergleich der Eigenkapital-Stufen</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Eigenkapital</th>
+              <th>Darlehen</th>
+              <th>Annuität</th>
+              <th>Steuerersparnis</th>
+              <th>Effektive Kosten (1. Jahr)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+        <p><strong>Empfehlung:</strong> Am günstigsten ist eine Finanzierung mit <strong>${besteEk.toLocaleString()} € Eigenkapital</strong>.</p>
+      `;
+    }
+  </script>
+
+</body>
+</html>
