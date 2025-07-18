@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Immobilien-Finanzierungsrechner</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    label, select, input { display: block; margin-top: 10px; width: 100%; }
+    .result { margin-top: 20px; background: #f1f1f1; padding: 15px; border-radius: 8px; }
+    .slider-value { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>🏠 Immobilien-Finanzierung & Steuervergleich</h2>
+
+  <label for="land">Land der Immobilie:</label>
+  <select id="land">
+    <option value="de">Deutschland</option>
+    <option value="se">Schweden</option>
+    <option value="us">USA</option>
+  </select>
+
+  <label for="kaufpreis">Kaufpreis (€):</label>
+  <input type="number" id="kaufpreis" value="300000">
+
+  <label for="eigenkapital">Eigenkapital (€): <span class="slider-value" id="ekValue">100000</span></label>
+  <input type="range" id="eigenkapital" min="0" max="300000" value="100000" step="1000" oninput="updateSliderValue()">
+
+  <label for="zinssatz">Zinssatz (%):</label>
+  <input type="number" id="zinssatz" value="3.5" step="0.1">
+
+  <label for="tilgung">Tilgung (%):</label>
+  <input type="number" id="tilgung" value="2.0" step="0.1">
+
+  <label for="vermietung">Vermietet:</label>
+  <select id="vermietung">
+    <option value="ja">Ja</option>
+    <option value="nein">Nein</option>
+  </select>
+
+  <button onclick="berechne()">🔍 Berechnen</button>
+
+  <div class="result" id="ergebnis"></div>
+
+  <script>
+    function updateSliderValue() {
+      const ek = document.getElementById('eigenkapital').value;
+      document.getElementById('ekValue').innerText = parseInt(ek).toLocaleString('de-DE') + " €";
+    }
+
+    function berechne() {
+      const kaufpreis = parseFloat(document.getElementById("kaufpreis").value);
+      const ek = parseFloat(document.getElementById("eigenkapital").value);
+      const darlehen = kaufpreis - ek;
+      const zinssatz = parseFloat(document.getElementById("zinssatz").value) / 100;
+      const tilgung = parseFloat(document.getElementById("tilgung").value) / 100;
+      const vermietung = document.getElementById("vermietung").value;
+      const land = document.getElementById("land").value;
+
+      const annuitaet = darlehen * (zinssatz + tilgung);
+      const afa = (vermietung === "ja") ? kaufpreis * 0.8 * 0.02 : 0; // nur bei Vermietung, 2% AfA
+      const schuldzinsen = darlehen * zinssatz;
+      const werbungskosten = afa + schuldzinsen;
+
+      let steuersatz = 0.42; // vereinfachter Spitzensteuersatz
+      if (land !== "de") {
+        steuersatz = 0; // Ausland → Progressionsvorbehalt nur, keine direkte Steuer
+      }
+
+      const steuerersparnis = werbungskosten * steuersatz;
+
+      const result = `
+        <strong>Darlehensbetrag:</strong> ${darlehen.toLocaleString('de-DE')} €<br>
+        <strong>Jährliche Annuität:</strong> ${annuitaet.toFixed(2).toLocaleString('de-DE')} €<br>
+        ${vermietung === "ja" ? `
+        <strong>Abschreibung (AfA):</strong> ${afa.toFixed(2).toLocaleString('de-DE')} €<br>
+        <strong>Schuldzinsen:</strong> ${schuldzinsen.toFixed(2).toLocaleString('de-DE')} €<br>
+        <strong>Werbungskosten gesamt:</strong> ${werbungskosten.toFixed(2).toLocaleString('de-DE')} €<br>
+        <strong>Steuerersparnis in DE:</strong> ${steuerersparnis.toFixed(2).toLocaleString('de-DE')} €` :
+        `<strong>Keine Werbungskosten oder AfA anrechenbar</strong>`}
+        <br><br><strong>Land:</strong> ${land === "de" ? "Deutschland" : land === "se" ? "Schweden" : "USA"}
+      `;
+
+      document.getElementById("ergebnis").innerHTML = result;
+    }
+
+    updateSliderValue();
+  </script>
+</body>
+</html>
